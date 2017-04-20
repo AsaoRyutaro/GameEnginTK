@@ -4,11 +4,9 @@
 
 #include "pch.h"
 #include "Game.h"
-#include <PrimitiveBatch.h>
-#include <Effects.h>
-#include <SimpleMath.h>
-#include <VertexTypes.h>
-#include <CommonStates.h>
+
+
+
 extern void ExitGame();
 
 using namespace DirectX;
@@ -16,9 +14,9 @@ using namespace DirectX::SimpleMath;
 
 using Microsoft::WRL::ComPtr;
 
-std::unique_ptr<PrimitiveBatch<VertexPositionColor>> primitiveBatch;
-std::unique_ptr<BasicEffect> basicEffect;
-ComPtr<ID3D11InputLayout> inputLayout;
+
+
+
 Game::Game() :
     m_window(0),
     m_outputWidth(800),
@@ -45,25 +43,31 @@ void Game::Initialize(HWND window, int width, int height)
     m_timer.SetTargetElapsedSeconds(1.0 / 60);
     */
 	
-	primitiveBatch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(m_d3dContext.Get());
-	
-	
+	m_batch = std::make_unique<PrimitiveBatch<VertexPositionNormal>>(m_d3dContext.Get());
 
-	basicEffect = std::make_unique<BasicEffect>(m_d3dDevice.Get());
+	
+	m_states = std::make_unique<CommonStates>(m_d3dDevice.Get());
 
-	basicEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0,
+	m_effect = std::make_unique<BasicEffect>(m_d3dDevice.Get());
+
+	m_effect->SetProjection(XMMatrixOrthographicOffCenterRH(0,
 	 m_outputWidth, m_outputHeight, 0, 0, 1));
-	basicEffect->SetVertexColorEnabled(true);
+	m_effect->SetVertexColorEnabled(true);
 
 	void const* shaderByteCode;
 	size_t byteCodeLength;
 
-	basicEffect->GetVertexShaderBytecode(&shaderByteCode, &byteCodeLength);
+	m_effect->GetVertexShaderBytecode(&shaderByteCode, &byteCodeLength);
 
-	m_d3dDevice->CreateInputLayout(VertexPositionColor::InputElements,
-		VertexPositionColor::InputElementCount,
-		shaderByteCode, byteCodeLength,
-		inputLayout.GetAddressOf());
+	DX::ThrowIfFailed(
+		m_d3dDevice->CreateInputLayout(VertexPositionColor::InputElements,
+			VertexPositionColor::InputElementCount,
+			shaderByteCode, byteCodeLength,
+			inputLayout.ReleaseAndGetAddressOf()));
+
+
+	m_world = Matrix::Identity;
+	m_debugcamera = std::make_unique<DebugCamera>(m_outputWidth, m_outputHeight);
 }
 
 // Executes the basic game loop.
@@ -84,11 +88,32 @@ void Game::Update(DX::StepTimer const& timer)
 
     // TODO: Add your game logic here.
     elapsedTime;
+	//デバッグカメラの更新
+	m_debugcamera->Update();
+	//デバッグカメラからビュー行列を取得
+	
+
 }
 
 // Draws the scene.
 void Game::Render()
 {
+	//頂点インデックス
+	uint16_t indices[] =
+	{
+		0, 1, 2,
+		2, 2, 3,
+	};
+
+	//頂点座標
+	VertexPositionNormal vertices[] =
+	{
+		{ Vector3(-1.0f, +1.0f, 0.0f), Vector3(0.0f, 0.0f, +1.0f) },
+		{ Vector3(-1.0f, -1.0f, 0.0f), Vector3(0.0f, 0.0f, +1.0f) },
+		{ Vector3(+1.0f, +1.0f, 0.0f), Vector3(0.0f, 0.0f, +1.0f) },
+		{ Vector3(+1.0f, -1.0f, 0.0f), Vector3(0.0f, 0.0f, +1.0f) },
+	};
+
     // Don't try to render anything before the first Update.
     if (m_timer.GetFrameCount() == 0)
     {
@@ -98,19 +123,42 @@ void Game::Render()
     Clear();
 
     // TODO: Add your rendering code here.
-	CommonStates states(m_d3dDevice.Get());
-	m_d3dContext->OMSetBlendState(states.Opaque(), nullptr, 0xFFFFFFFF);
-	m_d3dContext->OMSetDepthStencilState(states.DepthNone(), 0);
-	m_d3dContext->RSSetState(states.CullNone());
+	
 
-	basicEffect->Apply(m_d3dContext.Get());
+	m_d3dContext->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
+	m_d3dContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
+	m_d3dContext->RSSetState(m_states->CullNone());
+
+	m_view = m_debugcamera->GetCameraMatrix();
+
+	m_proj = Matrix::CreatePerspectiveFieldOfView(XM_PI / 4.f,
+		float(m_outputWidth) / float(m_outputHeight), 0.1f, 10.f);
+	
+	m_effect->SetView(m_view);
+	m_effect->SetProjection(m_proj);
+
+	
+
+	m_effect->Apply(m_d3dContext.Get());
 	m_d3dContext->IASetInputLayout(inputLayout.Get());
 
-	primitiveBatch->Begin();
-	primitiveBatch->DrawLine(
+	m_batch->Begin();
+
+	/*VertexPositionColor v1(Vector3(0.f, 0.5f, 0.5f), Colors::Yellow);
+	VertexPositionColor v2(Vector3(0.5f, -0.5f, 0.5f), Colors::Yellow);
+	VertexPositionColor v3(Vector3(-0.5f, -0.5f, 0.5f), Colors::Yellow);
+	*/
+	
+
+
+	m_batch->DrawIndexed(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, indices, 6, vertices, 4);
+
+	/*m_batch->DrawTriangle(v1, v2, v3);*/
+
+	/*m_batch->DrawLine(
 		VertexPositionColor(Vector3(),Color(1.0f,1.0f,1.0f)),
-		VertexPositionColor(Vector3(800,600,0),Color( 1.0f,1.0f,1.0f)));
-	primitiveBatch->End();
+		VertexPositionColor(Vector3(800,600,0),Color( 1.0f,1.0f,1.0f)));*/
+	m_batch->End();
     Present();
 }
 
