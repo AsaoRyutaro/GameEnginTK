@@ -36,6 +36,8 @@ void Game::Initialize(HWND window, int width, int height)
 
     CreateResources();
 
+
+
     // TODO: Change the timer settings if you want something other than the default variable timestep mode.
     // e.g. for 60 FPS fixed timestep update logic, call:
     /*
@@ -43,6 +45,14 @@ void Game::Initialize(HWND window, int width, int height)
     m_timer.SetTargetElapsedSeconds(1.0 / 60);
     */
 	
+
+	m_factory = std::make_unique<EffectFactory>(m_d3dDevice.Get());
+
+	m_factory->SetDirectory(L"Resources");
+
+	m_modelskydome = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources\\skydome.cmo", *m_factory);
+	m_modelground = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources\\ground1.cmo", *m_factory);
+
 	m_batch = std::make_unique<PrimitiveBatch<VertexPositionNormal>>(m_d3dContext.Get());
 
 	
@@ -132,7 +142,7 @@ void Game::Render()
 	m_view = m_debugcamera->GetCameraMatrix();
 
 	m_proj = Matrix::CreatePerspectiveFieldOfView(XM_PI / 4.f,
-		float(m_outputWidth) / float(m_outputHeight), 0.1f, 10.f);
+		float(m_outputWidth) / float(m_outputHeight), 0.1f, 200.f);
 	
 	m_effect->SetView(m_view);
 	m_effect->SetProjection(m_proj);
@@ -142,6 +152,9 @@ void Game::Render()
 	m_effect->Apply(m_d3dContext.Get());
 	m_d3dContext->IASetInputLayout(inputLayout.Get());
 
+	m_modelskydome->Draw(m_d3dContext.Get(), *m_states.get(), m_world, m_view, m_proj);
+	m_modelground->Draw(m_d3dContext.Get(), *m_states.get(),m_world, m_view, m_proj);
+
 	m_batch->Begin();
 
 	/*VertexPositionColor v1(Vector3(0.f, 0.5f, 0.5f), Colors::Yellow);
@@ -149,8 +162,6 @@ void Game::Render()
 	VertexPositionColor v3(Vector3(-0.5f, -0.5f, 0.5f), Colors::Yellow);
 	*/
 	
-
-
 	m_batch->DrawIndexed(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, indices, 6, vertices, 4);
 
 	/*m_batch->DrawTriangle(v1, v2, v3);*/
