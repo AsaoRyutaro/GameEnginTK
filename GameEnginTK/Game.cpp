@@ -52,6 +52,7 @@ void Game::Initialize(HWND window, int width, int height)
 
 	m_modelskydome = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources\\skydome.cmo", *m_factory);
 	m_modelground = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources\\ground1.cmo", *m_factory);
+	m_modelball = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources\\kyuu.cmo", *m_factory);
 
 	m_batch = std::make_unique<PrimitiveBatch<VertexPositionNormal>>(m_d3dContext.Get());
 
@@ -102,6 +103,24 @@ void Game::Update(DX::StepTimer const& timer)
 	m_debugcamera->Update();
 	//デバッグカメラからビュー行列を取得
 	
+	//球のワールド行列の計算
+	//スケーリング 
+	Matrix scalemat = Matrix::CreateScale(2.0f);
+	
+	//回転
+	Matrix rotmatZ = SimpleMath::Matrix::CreateRotationZ(3.14f);
+	Matrix rotmatX = SimpleMath::Matrix::CreateRotationX(3.14f);
+	Matrix rotmatY = SimpleMath::Matrix::CreateRotationY(3.14f);
+	Matrix rotmat = rotmatZ * rotmatX * rotmatY;
+
+	//平行移動
+	Matrix transmat = Matrix::CreateTranslation(1.0f, 0, 0);
+
+	//ワールド行列の合成
+	m_worldball = scalemat  * transmat  * rotmat;
+	
+	
+
 
 }
 
@@ -154,6 +173,12 @@ void Game::Render()
 
 	m_modelskydome->Draw(m_d3dContext.Get(), *m_states.get(), m_world, m_view, m_proj);
 	m_modelground->Draw(m_d3dContext.Get(), *m_states.get(),m_world, m_view, m_proj);
+	
+	for (int i = 0; i < 10; i++)
+	{
+		m_modelball->Draw(m_d3dContext.Get(), *m_states.get(), m_world, m_view, m_proj);
+	}
+	
 
 	m_batch->Begin();
 

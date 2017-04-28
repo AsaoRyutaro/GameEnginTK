@@ -194,6 +194,7 @@
   </ItemGroup>
   <ItemGroup>
     <MeshContentTask Include="Assets\ground1.FBX" />
+    <MeshContentTask Include="Assets\kyuu.FBX" />
     <MeshContentTask Include="Assets\skydome.FBX" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

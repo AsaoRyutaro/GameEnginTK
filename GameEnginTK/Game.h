@@ -74,6 +74,8 @@ private:
 	std::unique_ptr<DirectX::BasicEffect> m_effect;
 	std::unique_ptr<DirectX::CommonStates> m_states;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
+	
+	//ワールド座標
 	DirectX::SimpleMath::Matrix m_world;
 	DirectX::SimpleMath::Matrix m_view;
 	DirectX::SimpleMath::Matrix m_proj;
@@ -81,11 +83,16 @@ private:
 	std::unique_ptr<DebugCamera> m_debugcamera;
 
 	//エフェクトファクトリ
-	std::unique_ptr<DirectX::EffectFactory> m_factory;
+	std::unique_ptr < DirectX::EffectFactory> m_factory;
 
-	std::unique_ptr <DirectX::Model> m_modelskydome;
+	//モデル
+	std::unique_ptr < DirectX::Model> m_modelskydome;
 	std::unique_ptr < DirectX::Model> m_modelground;
-
-
+	std::unique_ptr < DirectX::Model> m_modelball;
+	
+	//単位行列をコピーしてワールド行列を初期化
+	DirectX::SimpleMath::Matrix m_worldball;
+	
+	
 
 };
